@@ -157,28 +157,11 @@ class BackgroundBubble {
 
 class LibraryPage {
   constructor() {
-    this.results = [
-      {
-        artist: 'Animals as Leaders',
-        title: 'The Joy of Motion',
-        color: color(200, 50, 0),
-        youtube:
-          'https://www.youtube.com/watch?v=mLPLhULHeXw&list=OLAK5uy_l7Cxjtvtra-8dZqY6fkSD1SOekHd-aKAQ',
-        Descriptors: [''],
-      },
-      {
-        artist: 'Animals as Leaders',
-        title: 'The Joy of Motion',
-      },
-      {
-        artist: 'Animals as Leaders',
-        title: 'The Joy of Motion',
-      },
-      {
-        artist: 'Animals as Leaders',
-        title: 'The Joy of Motion',
-      },
-    ];
+    this.results = albums.map((album) => ({
+      ...album,
+      Descriptors: album.Descriptors.split(', '),
+      imageElement: loadImage(album.Artwork),
+    }));
     this.resultsComponent = new ResultsComponent(this.results);
     this.availableTags = ['adventurous', 'futuristic', 'fun', 'harsh'];
     this.selectedTags = [];
@@ -353,7 +336,8 @@ class ResultsComponent {
       push();
       fill(60, 180, 60);
       const { x, y, itemSize } = ResultsComponent.itemDimensions(i);
-      rect(x, y, itemSize, itemSize, 10, 10, 10, 10);
+      image(album.imageElement, x, y, itemSize, itemSize);
+      // rect(x, y, itemSize, itemSize, 10, 10, 10, 10);
       pop();
       i++;
     }
