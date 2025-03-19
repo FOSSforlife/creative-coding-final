@@ -58,6 +58,8 @@ class Background {
     this.bubbles = new Array(16).fill(0).map(() => new BackgroundBubble());
     this.transitionState = 'none'; // none, init (up), off-screen (left), onto-screen (right)
     this.transitionProgress = 0.0;
+    this.mainColor = color(30, 80, 200);
+    this.color = this.mainColor;
   }
   update() {
     for (const bubble of this.bubbles) {
@@ -72,7 +74,7 @@ class Background {
     }
   }
   draw() {
-    background(30, 80, 200);
+    background(this.color);
     for (const bubble of this.bubbles) {
       bubble.draw();
     }
@@ -85,11 +87,23 @@ function transitionVelocity(progress, maxVelocity) {
     : map(progress, 0.5, 1, maxVelocity, 0);
 }
 
+function getMainColor(img) {
+  const x = img.width * 0.25;
+  const y = img.height * 0.25;
+  return img.get(x, y);
+}
+
 function switchToAlbumPage(album) {
   albumPage = new AlbumPage(album);
   currentView = 'album';
   bg.transitionState = 'off-screen';
-  // bg.albumPageColor = album.color;
+  bg.color = getMainColor(album.imageElement);
+}
+
+function switchToLibraryPage(album) {
+  currentView = 'library';
+  bg.transitionState = 'onto-screen';
+  bg.color = bg.mainColor;
 }
 
 function interpNorm(amount) {
@@ -150,20 +164,23 @@ class BackgroundBubble {
 
   draw() {
     noStroke();
-    fill(30, 110, this.hue);
+    fill(this.mainColor);
     circle(this.position.x, this.position.y, this.radius);
   }
 }
 
 class LibraryPage {
   constructor() {
-    this.results = albums.map((album) => ({
+    this.allAlbums = albums.map((album) => ({
       ...album,
       Descriptors: album.Descriptors.split(', '),
       imageElement: loadImage(album.Artwork),
     }));
+    this.results = [...this.allAlbums];
     this.resultsComponent = new ResultsComponent(this.results);
-    this.availableTags = ['adventurous', 'futuristic', 'fun', 'harsh'];
+    this.availableTags = [
+      ...new Set(this.allAlbums.flatMap((album) => album.Descriptors)),
+    ].sort();
     this.selectedTags = [];
     this.queryComponent = new QueryComponent(
       this.availableTags,
@@ -177,22 +194,28 @@ class LibraryPage {
       this.selectedTags = this.selectedTags.filter(
         (name) => name !== descriptorText
       );
-      // print(this.selectedTags);
     } else {
       this.selectedTags.push(descriptorText);
     }
-    this.updateResults();
+    this.updateResults(this.selectedTags);
   }
 
-  updateResults() {
-    this.results = this.results.filter(
-      (album) =>
-        album.Descriptors &&
-        album.Descriptors.every((descriptor) =>
-          this.selectedTags.includes(descriptor)
-        )
-    );
+  updateResults(selectedTags) {
+    if (selectedTags.length === 0) {
+      this.results = [...this.allAlbums];
+    } else {
+      this.results = this.results.filter(
+        (album) =>
+          album.Descriptors &&
+          selectedTags.every((descriptor) =>
+            album.Descriptors.includes(descriptor)
+          )
+      );
+    }
+    console.log(this.results);
+    print(this.results);
     this.queryComponent.createComponents(this.selectedTags);
+    this.resultsComponent.refresh(this.results);
   }
 
   mouseClicked() {
@@ -313,6 +336,10 @@ class ResultsComponent {
     }
   }
 
+  refresh(results) {
+    this.results = results;
+  }
+
   static itemDimensions(index) {
     const margin = {
       x: 50,
@@ -347,64 +374,20 @@ class ResultsComponent {
 class AlbumPage {
   constructor(album) {
     this.currentAlbum = album;
+    this.backButtonDimensions = font.textBounds('Back', 50, 50, 20);
+  }
+  mouseClicked() {
+    if (
+      mouseX > 0 &&
+      mouseX < this.backButtonDimensions.x + this.backButtonDimensions.w &&
+      mouseY > 0 &&
+      mouseY < this.backButtonDimensions.y + this.backButtonDimensions.h
+    ) {
+      switchToLibraryPage();
+    }
   }
   update() {}
-  draw() {}
-}
-
-class ParticleSystem {
-  constructor() {
-    this.particles = [];
-  }
-
-  add() {
-    this.particles.push(new Polygon());
-  }
-
-  update() {
-    this.particles.forEach((p) => p.move());
-  }
-
   draw() {
-    this.particles.forEach((p) => p.draw());
-  }
-}
-
-class Polygon {
-  constructor() {
-    this.position = createVector(origin.x, origin.y);
-    this.velocity = createVector(random(40) / 10 - 2, random(40) / 10 - 2);
-    this.vertices = 3;
-    this.radius = 12;
-    this.hue = 0;
-    this.rotation = 0;
-  }
-
-  move() {
-    this.position.add(this.velocity);
-    this.rotation += 0.1;
-
-    if (this.position.y < 1 || this.position.y > 400) {
-      this.hue += 30;
-      this.vertices++;
-      this.velocity.y *= -1;
-    } else if (this.position.x < 1 || this.position.x > 400) {
-      this.hue += 30;
-      this.vertices++;
-      this.velocity.x *= -1;
-    }
-  }
-
-  draw() {
-    fill(color(200, 80, 100));
-    push();
-    translate(this.position.x, this.position.y);
-    rotate(this.rotation);
-    beginShape();
-    for (let i = 0; i < 360; i += 360 / this.vertices) {
-      vertex(cos(i) * this.radius, sin(i) * this.radius);
-    }
-    endShape();
-    pop();
+    text('Back', this.backButtonDimensions.x, this.backButtonDimensions.y);
   }
 }
