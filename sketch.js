@@ -10,7 +10,7 @@ let firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 function preload() {
-  font = loadFont('/assets/Tektur-Regular.ttf');
+  font = loadFont('assets/Tektur-Regular.ttf');
 }
 
 function setup() {
