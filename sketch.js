@@ -4,6 +4,11 @@ let albumPage;
 let bg;
 let font;
 
+const tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+let firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
 function preload() {
   font = loadFont('/assets/Tektur-Regular.ttf');
 }
@@ -373,21 +378,44 @@ class ResultsComponent {
 
 class AlbumPage {
   constructor(album) {
-    this.currentAlbum = album;
+    this.album = album;
     this.backButtonDimensions = font.textBounds('Back', 50, 50, 20);
+    this.playerDiv = createDiv();
+    this.player = {
+      destroy: () => {},
+    };
+    if (album.YouTube) {
+      this.playerDiv.id('player');
+      this.playerDiv.position(100, 100);
+      this.player = new YT.Player('player', {
+        height: 320,
+        width: 400,
+        videoId: album.YouTube.split('watch?v=').pop(),
+      });
+    }
   }
   mouseClicked() {
+    // back button
     if (
       mouseX > 0 &&
       mouseX < this.backButtonDimensions.x + this.backButtonDimensions.w &&
       mouseY > 0 &&
       mouseY < this.backButtonDimensions.y + this.backButtonDimensions.h
     ) {
+      this.playerDiv.html('');
+      this.playerDiv.remove();
+      this.player.destroy();
+      removeElements();
       switchToLibraryPage();
     }
   }
   update() {}
   draw() {
     text('Back', this.backButtonDimensions.x, this.backButtonDimensions.y);
+    push();
+    textSize(22);
+    text(this.album.Artist, 530, 200);
+    text(this.album.Title, 530, 230);
+    pop();
   }
 }
